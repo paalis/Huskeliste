@@ -1,0 +1,14 @@
+{
+  "name": "Huskeliste",
+  "short_name": "Huskeliste",
+  "description": "En enkel, privat huskeliste som virker uten nett.",
+  "lang": "nb-NO",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f7f2",
+  "theme_color": "#f8f7f2",
+  "icons": [
+    {"src":"./icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
