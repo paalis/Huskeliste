@@ -2,9 +2,10 @@ import { localISO } from './date.js';
 import { parseCommand, findMatches } from './commands.js';
 import { openTaskStore } from './storage.js';
 import { cloudConfigured, openCloud, queueDelete } from './cloud.js';
+import { createVoice, speak } from './voice.js';
 
 const store = openTaskStore();
-let tasks = [], view = 'I dag', pending = null, cloud = null;
+let tasks = [], view = 'I dag', pending = null, cloud = null, spoken = false;
 const views = ['I dag','Kommende','Alle','Fullført'];
 const app = document.querySelector('#app');
 
@@ -13,7 +14,7 @@ app.innerHTML = `<header><div class="brand"><span class="logo">✓</span><span>H
 <div class="heading"><div><p class="eyebrow">MIN DAG</p><h1>I dag</h1><p id="subtitle"></p></div><button id="add" class="add" aria-label="Legg til oppgave">+</button></div>
 <form id="task-form" class="task-form hidden"><input id="title" required maxlength="120" placeholder="Hva skal du huske?" aria-label="Oppgavetittel"><div class="form-row"><input id="due" type="date" aria-label="Frist"><select id="priority" aria-label="Prioritet"><option value="lav">Lav</option><option value="middels" selected>Middels</option><option value="høy">Høy</option></select><button>Lagre</button></div></form>
 <div id="task-list" class="task-list"></div></section>
-<aside class="chat"><div class="chat-title"><span class="avatar">✦</span><div><strong>Hjelperen</strong><small>Innebygd · virker uten nett</small></div></div><div id="messages" class="messages"><div class="bubble bot">Hei! Jeg kan legge til, finne, flytte og fullføre oppgaver.<div class="examples"><button>Legg til handle melk i morgen</button><button>Finn tannlege</button></div></div></div><form id="chat-form" class="chat-input"><input id="chat-text" autocomplete="off" placeholder="Skriv en beskjed …" aria-label="Melding"><button aria-label="Send">↑</button></form></aside></main>
+<aside class="chat"><div class="chat-title"><span class="avatar">✦</span><div><strong>Hjelperen</strong><small>Innebygd · virker uten nett</small></div></div><div id="messages" class="messages"><div class="bubble bot">Hei! Jeg kan legge til, finne, flytte og fullføre oppgaver.<div class="examples"><button>Legg til handle melk i morgen</button><button>Finn tannlege</button></div></div></div><form id="chat-form" class="chat-input"><input id="chat-text" autocomplete="off" placeholder="Skriv en beskjed …" aria-label="Melding"><button type="button" id="mic" class="mic hidden" aria-label="Snakk til hjelperen" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button aria-label="Send">↑</button></form></aside></main>
 <dialog id="settings-dialog"><button class="close" aria-label="Lukk">×</button><h2>Data og sikkerhetskopi</h2><p id="storage-note">Oppgavene lagres bare på denne enheten.</p><section id="account" class="account hidden"><h3>Synkronisering</h3><p id="account-status"></p><form id="login-form"><input id="email" type="email" required autocomplete="email" placeholder="E-postadresse" aria-label="E-postadresse"><button>Send innloggingslenke</button></form><form id="code-form" class="hidden"><input id="code" required inputmode="numeric" autocomplete="one-time-code" placeholder="Kode fra e-posten" aria-label="Engangskode"><button>Logg inn med kode</button></form><div id="account-actions" class="hidden"><button id="sync-now" type="button">Synkroniser nå</button><button id="logout" type="button">Logg ut</button></div></section><button id="export">Eksporter sikkerhetskopi</button><label class="import">Importer sikkerhetskopi<input id="import" type="file" accept="application/json"></label><p class="note">Varsler i bakgrunnen er ikke med i denne versjonen.</p></dialog><div id="toast" role="status"></div>`;
 
 const $ = s => document.querySelector(s);
@@ -26,7 +27,7 @@ function render() {
   $('#task-list').innerHTML=list.length ? list.map(t=>`<article class="task ${t.completed?'done':''}"><button class="check" data-check="${t.id}" aria-label="${t.completed?'Gjenåpne':'Fullfør'} ${escape(t.title)}">${t.completed?'✓':''}</button><div><strong>${escape(t.title)}</strong><p><span class="priority ${t.priority}"></span>${humanDate(t.due)} · ${t.priority} prioritet</p></div><button class="delete" data-delete="${t.id}" aria-label="Slett ${escape(t.title)}">×</button></article>`).join('') : `<div class="empty"><span>✓</span><h2>Alt er i orden</h2><p>Ingen oppgaver i denne visningen.</p></div>`;
 }
 function escape(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-function say(text, buttons=[]) { const el=document.createElement('div'); el.className='bubble bot'; el.innerHTML=`${escape(text)}${buttons.length?`<div class="choices">${buttons.map((b,i)=>`<button data-choice="${i}">${escape(b)}</button>`).join('')}</div>`:''}`; $('#messages').append(el); $('#messages').scrollTop=$('#messages').scrollHeight; }
+function say(text, buttons=[]) { if(spoken)speak(text); const el=document.createElement('div'); el.className='bubble bot'; el.innerHTML=`${escape(text)}${buttons.length?`<div class="choices">${buttons.map((b,i)=>`<button data-choice="${i}">${escape(b)}</button>`).join('')}</div>`:''}`; $('#messages').append(el); $('#messages').scrollTop=$('#messages').scrollHeight; }
 async function save(task){ task={...task,updatedAt:new Date().toISOString()}; await store.put(task); cloud?.push(task).catch(()=>{}); const i=tasks.findIndex(t=>t.id===task.id); i<0?tasks.push(task):tasks.splice(i,1,task); render(); }
 function newTask(title,due=null,priority='middels'){ return {id:crypto.randomUUID(),title,due,priority,completed:false,createdAt:new Date().toISOString()}; }
 
@@ -56,7 +57,14 @@ async function execute(command){
   }
   try{if(command.type==='complete')await save({...t,completed:true}); else if(command.type==='move')await save({...t,due:command.due}); say(command.type==='complete'?`«${t.title}» er fullført.`:`«${t.title}» er flyttet. Jeg tolket datoen som ${command.interpreted.label}.`);}catch{say('Endringen kunne ikke lagres. Prøv igjen.');}
 }
-$('#chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('#chat-text');if(!input.value.trim())return;const el=document.createElement('div');el.className='bubble user';el.textContent=input.value;$('#messages').append(el);const command=parseCommand(input.value);input.value='';execute(command);});
+$('#chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('#chat-text');if(!input.value.trim())return;const el=document.createElement('div');el.className='bubble user';el.textContent=input.value;$('#messages').append(el);const command=parseCommand(input.value);input.value='';execute(command).finally(()=>{spoken=false;});});
+const voice=createVoice({
+  onText:text=>{$('#chat-text').value=text;},
+  onFinal:text=>{spoken=true;$('#chat-text').value=text;$('#chat-form').requestSubmit();},
+  onState:on=>{$('#mic').classList.toggle('listening',on);$('#mic').setAttribute('aria-pressed',String(on));$('#chat-text').placeholder=on?'Lytter …':'Skriv en beskjed …';},
+  onError:error=>toast(error==='not-allowed'||error==='service-not-allowed'?'Mikrofonen er ikke tillatt. Sjekk innstillingene for nettleseren.':error==='no-speech'?'Jeg hørte ingenting. Prøv igjen.':'Talegjenkjenningen feilet. Prøv igjen.')
+});
+if(voice){$('#mic').classList.remove('hidden');$('#mic').onclick=()=>voice.listening?voice.stop():voice.start();}
 $('#settings').onclick=()=>$('#settings-dialog').showModal();$('.close').onclick=()=>$('#settings-dialog').close();
 $('#export').onclick=()=>{const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),tasks},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`huskeliste-${localISO(new Date())}.json`;a.click();URL.revokeObjectURL(a.href);};
 $('#import').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.tasks))throw Error();for(const task of data.tasks)await store.put(task);tasks=await store.all();render();syncNow();toast('Sikkerhetskopien er importert');}catch{toast('Ugyldig sikkerhetskopi');}};

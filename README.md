@@ -60,6 +60,7 @@ Alle kildefilene, inkludert appikonet, er tekstfiler. Dermed kan endringene oppr
 ## Bruk
 
 - Legg til med den store **+**-knappen, eller skriv for eksempel «Legg til betale strøm i morgen høy prioritet».
+- Trykk på mikrofonen ved meldingsfeltet og snakk, for eksempel «legg til ring tannlegen i morgen». Hjelperen svarer også med tale. Første gang ber nettleseren om tilgang til mikrofonen. Knappen vises bare i nettlesere som støtter talegjenkjenning (Safari og Chrome).
 - Hjelperen forstår å legge til, finne, flytte, fullføre og slette. Ved flere treff ber den deg velge, og sletting krever bekreftelse.
 - Åpne menyen **•••** for å eksportere eller importere en JSON-sikkerhetskopi.
 - Under **•••** kan du logge inn med e-post for å synkronisere mellom enheter.
