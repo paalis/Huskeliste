@@ -31,6 +31,9 @@ jobs:
         run: npm test
       - name: Bygg
         run: npm run build
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
       - name: Konfigurer Pages
         uses: actions/configure-pages@v5
       - name: Last opp nettsiden
