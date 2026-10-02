@@ -13,14 +13,15 @@ export function createVoice({ onText, onFinal, onState, onError }, scope = globa
       if (recognition) return;
       recognition = new Recognition();
       recognition.lang = 'nb-NO'; recognition.interimResults = true; recognition.continuous = false; recognition.maxAlternatives = 1;
-      let finalText = '';
+      // Safari avslutter av og til uten et endelig resultat, så det sist hørte sendes også da.
+      let heard = '';
       recognition.onresult = e => {
         const text = [...e.results].map(r => r[0].transcript).join('');
-        onText(cleanTranscript(text));
-        if (e.results[e.results.length - 1].isFinal) finalText = cleanTranscript(text);
+        heard = cleanTranscript(text);
+        onText(heard);
       };
-      recognition.onerror = e => onError(e.error);
-      recognition.onend = () => { recognition = null; onState(false); if (finalText) onFinal(finalText); };
+      recognition.onerror = e => { heard = ''; onError(e.error); };
+      recognition.onend = () => { recognition = null; onState(false); if (heard) onFinal(heard); };
       recognition.start(); onState(true);
     },
     stop() { recognition?.stop(); }

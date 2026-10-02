@@ -24,3 +24,13 @@ test('sender ferdig tolket tale videre på norsk', () => {
   assert.deepEqual(states, [true, false]);
   assert.equal(voice.listening, false);
 });
+test('sender det sist hørte selv om Safari avslutter uten endelig resultat', () => {
+  let instance;
+  class FakeRecognition { constructor(){ instance = this; } start(){} stop(){ this.onend(); } }
+  const finals = [];
+  const voice = createVoice({ onText(){}, onFinal:t => finals.push(t), onState(){}, onError(){} }, { SpeechRecognition:FakeRecognition });
+  voice.start();
+  instance.onresult({ results:[Object.assign([{ transcript:'Finn tannlege' }], { isFinal:false })] });
+  instance.onend();
+  assert.deepEqual(finals, ['Finn tannlege']);
+});
