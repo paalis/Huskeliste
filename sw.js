@@ -1,4 +1,4 @@
-const CACHE='huskeliste-v6';
+const CACHE='huskeliste-v7';
 const FILES=['./','./index.html','./src/app.js','./src/style.css','./src/date.js','./src/commands.js','./src/storage.js','./src/config.js','./src/sync.js','./src/cloud.js','./src/voice.js','./manifest.webmanifest','./icons/icon.svg'];
 // Ny versjon tar over med en gang, slik at oppdateringer når appen på Hjem-skjermen uten at den må lukkes helt.
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)));});
