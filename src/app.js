@@ -1,7 +1,7 @@
 import { localISO } from './date.js';
 import { parseCommand, findMatches } from './commands.js';
 import { openTaskStore } from './storage.js';
-import { cloudConfigured, openCloud } from './cloud.js';
+import { cloudConfigured, openCloud, queueDelete } from './cloud.js';
 
 const store = openTaskStore();
 let tasks = [], view = 'I dag', pending = null, cloud = null;
@@ -61,7 +61,7 @@ $('#settings').onclick=()=>$('#settings-dialog').showModal();$('.close').onclick
 $('#export').onclick=()=>{const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),tasks},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`huskeliste-${localISO(new Date())}.json`;a.click();URL.revokeObjectURL(a.href);};
 $('#import').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.tasks))throw Error();for(const task of data.tasks)await store.put(task);tasks=await store.all();render();syncNow();toast('Sikkerhetskopien er importert');}catch{toast('Ugyldig sikkerhetskopi');}};
 function toast(s){$('#toast').textContent=s;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2400);}
-async function removeTask(id){ await store.remove(id); tasks=tasks.filter(x=>x.id!==id); render(); cloud?.remove(id).catch(()=>{}); }
+async function removeTask(id){ queueDelete(id); await store.remove(id); tasks=tasks.filter(x=>x.id!==id); render(); cloud?.remove(id).catch(()=>{}); }
 let syncing=null;
 function syncNow(manual=false){
   if(!cloud?.user||!navigator.onLine){if(manual)toast('Ingen nettforbindelse');return Promise.resolve();}
@@ -78,7 +78,7 @@ function renderAccount(){
 $('#login-form').addEventListener('submit',async e=>{e.preventDefault();try{await cloud.signIn($('#email').value.trim());$('#code-form').classList.remove('hidden');toast('Sjekk e-posten din');}catch{toast('Kunne ikke sende e-post');}});
 $('#code-form').addEventListener('submit',async e=>{e.preventDefault();try{await cloud.verify($('#email').value.trim(),$('#code').value.trim());e.target.reset();}catch{toast('Ugyldig eller utløpt kode');}});
 $('#sync-now').onclick=()=>syncNow(true);
-$('#logout').onclick=async()=>{await cloud.signOut();toast('Logget ut');};
+$('#logout').onclick=async()=>{await cloud.signOut();tasks=await store.all();render();toast('Logget ut');};
 store.all().then(value=>{tasks=value;render();}).catch(()=>toast('Kunne ikke åpne lokal lagring'));
 if(cloudConfigured) openCloud(store,()=>{renderAccount();syncNow();}).then(c=>{cloud=c;renderAccount();syncNow();}).catch(()=>{});
 addEventListener('online',()=>syncNow());
