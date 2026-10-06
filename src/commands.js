@@ -1,7 +1,9 @@
-import { parseNorwegianDate } from './date.js';
+import { DATE_PATTERN, parseNorwegianDate } from './date.js';
+
+const DATE_IN_TEXT = new RegExp(`(?<![\\p{L}\\p{N}])(?:frist |til |på |innen )?(${DATE_PATTERN})(?![\\p{L}\\p{N}])`, 'iu');
 
 function extractDate(text, now) {
-  const match = text.match(/(?:frist |til |på )?(i dag|i morgen|om \d+ dager?|\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?)/i);
+  const match = text.match(DATE_IN_TEXT);
   if (!match) return { text: text.trim(), due: null, interpreted: null };
   const interpreted = parseNorwegianDate(match[1], now);
   return { text: text.replace(match[0], '').trim(), due: interpreted?.iso ?? null, interpreted };
@@ -25,7 +27,22 @@ export function parseCommand(input, now = new Date()) {
   return { type:'unknown' };
 }
 
+const STOPWORDS = new Set(['på','til','med','for','og','å','i','en','et','ei','den','det','de','min','mitt','mine','som','av','om']);
+const words = text => text.toLocaleLowerCase('nb-NO').match(/[\p{L}\p{N}]+/gu)?.filter(w => !STOPWORDS.has(w)) ?? [];
+// To ord regnes som like når det korteste (minst fire tegn) og starten av det lengste stemmer, så «melka» finner «melk».
+function sameWord(a, b) {
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.length < 4 ? short === long : long.startsWith(short.slice(0, Math.max(4, short.length - 2)));
+}
+
 export function findMatches(tasks, query) {
   const needle = query.toLocaleLowerCase('nb-NO');
-  return tasks.filter(t => t.title.toLocaleLowerCase('nb-NO').includes(needle));
+  const exact = tasks.filter(t => t.title.toLocaleLowerCase('nb-NO').includes(needle));
+  if (exact.length) return exact;
+  // Ingen direkte treff: velg oppgavene som deler flest ord (også bøyde former) med søket.
+  const wanted = words(query);
+  if (!wanted.length) return [];
+  const scored = tasks.map(t => { const have = words(t.title); return { t, score: wanted.filter(w => have.some(h => sameWord(w, h))).length / wanted.length }; });
+  const best = Math.max(0, ...scored.map(s => s.score));
+  return best >= 0.5 ? scored.filter(s => s.score === best).map(s => s.t) : [];
 }

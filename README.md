@@ -30,6 +30,16 @@ Innstillinger i Supabase-dashbordet (**Authentication → URL Configuration**):
 
 Sammenslåingen skjer per oppgave: den sist endrede versjonen vinner, og slettede oppgaver markeres med `deleted_at` slik at slettingen også når andre enheter. Endringer gjort uten nett sendes ved neste synkronisering.
 
+## Hjelperens egen språkmodell
+
+Hjelperen forstår vanlige norske setninger som «minn meg på å ringe tannlegen på fredag», «melka er kjøpt» eller «utsett klippe plenen til neste uke». Det gjør den med en liten språkmodell som er trent for denne appen. Modellen kjører helt i nettleseren, virker uten nett og sender ingenting til eksterne tjenester.
+
+- `src/nlu.js` inneholder modellen. Den finner ut *hva* du vil (legge til, fullføre, flytte, slette eller finne) og *hvilken oppgave* og *dato* det gjelder. Datoer og prioritet tolkes deretter med de vanlige reglene i `src/date.js`.
+- `src/model.json` er de trente vektene (ca. 250 kB).
+- `scripts/train-model.js` lager treningssetninger fra norske maler, oppgaver og datoer, trener modellen og skriver ut hvor godt den treffer på setninger den aldri har sett. Kjør `npm run train` etter at du har lagt til nye formuleringer.
+
+De faste reglene prøves først. Modellen brukes når reglene ikke forstår beskjeden.
+
 ## Publiser på GitHub Pages over HTTPS
 
 1. Opprett et tomt repository på GitHub og push prosjektet dit.
@@ -61,7 +71,7 @@ Alle kildefilene, inkludert appikonet, er tekstfiler. Dermed kan endringene oppr
 
 - Legg til med den store **+**-knappen, eller skriv for eksempel «Legg til betale strøm i morgen høy prioritet».
 - Trykk på mikrofonen ved meldingsfeltet og snakk, for eksempel «legg til ring tannlegen i morgen». Hjelperen svarer også med tale. Første gang ber nettleseren om tilgang til mikrofonen. Knappen vises bare i nettlesere som støtter talegjenkjenning (Safari og Chrome).
-- Hjelperen forstår å legge til, finne, flytte, fullføre og slette. Ved flere treff ber den deg velge, og sletting krever bekreftelse.
+- Hjelperen forstår å legge til, finne, flytte, fullføre og slette, også når du sier det med egne ord, og kjenner igjen datoer som «på fredag», «neste uke» og «om to dager». Ved flere treff ber den deg velge, og sletting krever bekreftelse.
 - Åpne menyen **•••** for å eksportere eller importere en JSON-sikkerhetskopi.
 - Under **•••** kan du logge inn med e-post for å synkronisere mellom enheter.
 - Uten innlogging forblir oppgavene på enheten. Tømming av nettleserdata kan slette dem, så ta sikkerhetskopi jevnlig.
