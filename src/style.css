@@ -1,104 +1,110 @@
-/* Enkel, flat stil: gul bakgrunn, svart blekk, tynne linjer og én rød aksent. Fontene finnes allerede på iPhone og Mac. */
-:root{--bg:#ffd833;--ink:#1d1d1b;--muted:#5c5216;--red:#e2332d;--line:1px solid var(--ink);--display:Futura,'Futura PT','Century Gothic','Avenir Next',system-ui,sans-serif;--serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;font-family:var(--serif);color:var(--ink);background:var(--bg);font-synthesis:none;-webkit-font-smoothing:antialiased}
+/* Mørk stil med mintgrønn aksent og glød, «//»-etiketter og avrundede felt. Bare systemfonter, så appen virker uten nett. */
+:root{--bg:#0c0e0f;--panel:#15191a;--panel-2:#1c2122;--edge:rgba(255,255,255,.08);--text:#f2f5f4;--muted:#8a9593;--accent:#1fe5b5;--accent-ink:#04261e;--red:#ff5f56;--glow:0 0 28px rgba(31,229,181,.45);--display:-apple-system,'SF Pro Display','Inter','Helvetica Neue',system-ui,sans-serif;--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-family:var(--display);color:var(--text);background:var(--bg);color-scheme:dark;font-synthesis:none;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg)}
+body{margin:0;min-height:100vh;background:
+  radial-gradient(ellipse 80% 45% at 70% 0,rgba(23,120,108,.55),transparent 70%),
+  radial-gradient(ellipse 60% 40% at 0 100%,rgba(23,120,108,.25),transparent 70%),
+  var(--bg);background-attachment:fixed}
+/* Tynne linjer øverst, som kartteksturen i forbildet. */
+body::before{content:'';position:fixed;inset:0 0 auto;height:55vh;pointer-events:none;z-index:-1;background:repeating-linear-gradient(-8deg,rgba(255,255,255,.05) 0 1px,transparent 1px 7px);-webkit-mask-image:radial-gradient(ellipse 70% 90% at 65% 0,#000,transparent 75%);mask-image:radial-gradient(ellipse 70% 90% at 65% 0,#000,transparent 75%)}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-.caps,header .brand,nav,.nav,.eyebrow,h1,h2,h3,.task p,.chat-title strong,.chat-title small,.form-row button,dialog>button:not(.close),.import,.account button{font-family:var(--display);text-transform:uppercase;letter-spacing:.16em}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.eyebrow,.chat-title small,.task p,.note,.account h3{font-family:var(--mono)}
+.eyebrow::before,.account h3::before{content:'// ';color:var(--accent)}
 
-header{height:84px;padding:0 clamp(20px,5vw,72px);display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:600}
-.logo{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:15px;letter-spacing:0}
-.icon-btn{border:0;background:transparent;font-weight:bold;font-size:18px;letter-spacing:3px;padding:14px}
+header{height:80px;padding:0 clamp(20px,5vw,72px);display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:15px;box-shadow:var(--glow)}
+.icon-btn{border:0;background:transparent;font-weight:bold;font-size:18px;letter-spacing:3px;padding:14px;color:var(--muted)}
 
-main{max-width:1200px;margin:auto;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,.8fr);min-height:calc(100vh - 84px)}
-.tasks-panel{padding:24px clamp(22px,5vw,72px) 48px}
+main{max-width:1200px;margin:auto;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,.8fr);min-height:calc(100vh - 80px)}
+.tasks-panel{padding:20px clamp(22px,5vw,72px) 48px}
 
-nav{display:flex;gap:28px;overflow:auto;padding-bottom:6px}
-.nav{white-space:nowrap;border:0;border-bottom:3px solid transparent;padding:8px 0;background:transparent;font-size:13px;font-weight:500;color:var(--ink);letter-spacing:.2em}
-.nav.active{border-bottom-color:var(--ink);font-weight:600}
+nav{display:flex;gap:6px;overflow:auto;padding:4px;background:rgba(255,255,255,.04);border:1px solid var(--edge);border-radius:999px;width:max-content;max-width:100%}
+.nav{white-space:nowrap;border:0;padding:9px 16px;border-radius:999px;background:transparent;color:var(--muted);font-size:14px;font-weight:500}
+.nav.active{background:var(--panel-2);color:var(--accent);box-shadow:inset 0 0 0 1px rgba(31,229,181,.35)}
 
-.heading{display:flex;align-items:end;justify-content:space-between;margin:64px 0 28px}
-.eyebrow{font-size:11px;font-weight:600;margin:0 0 10px;color:var(--muted)}
-h1{font-size:clamp(30px,5vw,46px);font-weight:600;margin:0;line-height:1.05}
-#subtitle{font-family:var(--serif);font-size:17px;color:var(--muted);margin:10px 0 0;text-transform:capitalize;letter-spacing:0}
-.add{border:0;border-radius:50%;background:var(--ink);color:var(--bg);width:52px;height:52px;font-size:30px;line-height:1;flex:none}
+.heading{display:flex;align-items:end;justify-content:space-between;margin:56px 0 28px}
+.eyebrow{font-size:13px;color:var(--accent);margin:0 0 10px;letter-spacing:.04em;text-transform:uppercase}
+h1{font-size:clamp(40px,8vw,64px);font-weight:800;margin:0;line-height:.95;letter-spacing:-.02em;text-transform:uppercase}
+#subtitle{color:var(--muted);margin:12px 0 0;font-size:16px;text-transform:capitalize}
+.add{border:0;border-radius:50%;background:var(--accent);color:var(--accent-ink);width:56px;height:56px;font-size:30px;line-height:1;flex:none;box-shadow:var(--glow)}
 
-.task-form{padding:16px 0;border-top:var(--line);border-bottom:var(--line);margin-bottom:8px}
+.task-form{padding:18px;background:var(--panel);border:1px solid var(--edge);border-radius:24px;margin-bottom:14px}
 .task-form.hidden{display:none}
-.task-form>input{width:100%;font-size:20px;padding:6px 0;border:0;background:transparent;outline:0}
-.task-form>input::placeholder,.chat-input input::placeholder,.account input::placeholder{color:var(--muted)}
-.form-row{display:flex;gap:10px;margin-top:12px}
-.form-row>*{min-height:42px;padding:8px 10px;border:var(--line);border-radius:0;background:transparent}
-.form-row button{margin-left:auto;background:var(--ink);color:var(--bg);font-size:12px;font-weight:600;padding:8px 18px}
+.task-form>input{width:100%;font-size:18px;padding:14px 18px;border:1px solid var(--edge);border-radius:999px;background:#0f1213;outline:0}
+input::placeholder{color:var(--muted);opacity:1}
+.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.form-row>*{min-height:46px;padding:8px 16px;border:1px solid var(--edge);border-radius:999px;background:#0f1213}
+/* Hovedknapper: mintgrønn pille med skrå striper og glød. */
+.form-row button,.account form button{margin-left:auto;border:0;color:var(--accent-ink);font-weight:700;background:repeating-linear-gradient(-45deg,rgba(255,255,255,.12) 0 2px,transparent 2px 7px),var(--accent);box-shadow:var(--glow)}
+.form-row button{padding:8px 26px}
 
-.task-list{border-top:var(--line)}
-.task{display:grid;grid-template-columns:24px 1fr 36px;align-items:center;gap:18px;padding:18px 0;border-bottom:var(--line)}
-.task strong{font-size:19px;font-weight:400}
-.task p{margin:6px 0 0;font-size:11px;color:var(--muted);display:flex;align-items:center}
+.task-list{display:flex;flex-direction:column;gap:10px}
+.task{display:grid;grid-template-columns:26px 1fr 36px;align-items:center;gap:16px;padding:18px 16px 18px 20px;background:var(--panel);border:1px solid var(--edge);border-radius:22px}
+.task strong{font-size:17px;font-weight:600}
+.task p{margin:7px 0 0;font-size:12px;color:var(--muted);display:flex;align-items:center}
 .task.done strong{text-decoration:line-through;color:var(--muted)}
-.check{width:22px;height:22px;border-radius:0;border:2px solid var(--ink);background:transparent;color:var(--bg);padding:0;font-size:13px;line-height:1}
-.done .check{background:var(--ink)}
-.priority{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:9px;background:var(--ink)}
-.priority.høy{background:var(--red)}
-.priority.lav{background:transparent;border:1.5px solid var(--ink)}
-.delete{border:0;background:transparent;color:var(--ink);font-size:22px;opacity:.45}
-.delete:hover{opacity:1}
+.check{width:24px;height:24px;border-radius:50%;border:2px solid #6f7c7a;background:transparent;color:var(--accent-ink);padding:0;font-size:13px;font-weight:800;line-height:1}
+.done .check{background:var(--accent);border-color:var(--accent);box-shadow:0 0 14px rgba(31,229,181,.5)}
+.priority{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:9px;background:var(--accent)}
+.priority.høy{background:var(--red);box-shadow:0 0 8px var(--red)}
+.priority.lav{background:#5b6664}
+.delete{border:0;background:transparent;color:var(--muted);font-size:22px}
+.delete:hover{color:var(--text)}
 
-.empty{text-align:center;padding:72px 10px;border-bottom:var(--line)}
-.empty span{display:grid;place-items:center;margin:auto;width:46px;height:46px;border-radius:50%;border:var(--line);font-size:20px}
-.empty h2{font-size:14px;font-weight:600;margin:20px 0 6px}
-.empty p{margin:0;color:var(--muted);font-size:16px}
+.empty{text-align:center;padding:64px 10px;background:var(--panel);border:1px dashed var(--edge);border-radius:22px}
+.empty span{display:grid;place-items:center;margin:auto;width:48px;height:48px;border-radius:50%;background:rgba(31,229,181,.12);color:var(--accent);font-size:22px}
+.empty h2{font-size:18px;margin:16px 0 4px}
+.empty p{margin:0;color:var(--muted)}
 
-.chat{display:flex;flex-direction:column;border-left:var(--line);padding:24px clamp(18px,3vw,40px) 28px}
+.chat{display:flex;flex-direction:column;border-left:1px solid var(--edge);padding:24px clamp(18px,3vw,40px) 28px;background:linear-gradient(rgba(12,14,15,.4),rgba(12,14,15,.85))}
 .chat-title{display:flex;align-items:center;gap:12px}
 .chat-title div{display:flex;flex-direction:column}
-.chat-title strong{font-size:13px;font-weight:600}
-.chat-title small{color:var(--muted);margin-top:4px;font-size:10px}
-.avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:var(--line);font-size:14px}
+.chat-title strong{font-size:16px}
+.chat-title small{color:var(--accent);margin-top:4px;font-size:11px}
+.avatar{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--panel-2);border:1px solid var(--edge);color:var(--accent)}
 .messages{display:flex;flex-direction:column;gap:12px;flex:1;overflow:auto;padding:32px 0;max-height:calc(100vh - 220px)}
-.bubble{max-width:90%;font-size:16px;line-height:1.5;padding:12px 16px;border:var(--line)}
-.bubble.user{align-self:flex-end;background:var(--ink);color:var(--bg)}
+.bubble{max-width:90%;font-size:15px;line-height:1.5;padding:13px 16px;background:var(--panel);border:1px solid var(--edge);border-radius:6px 20px 20px 20px}
+.bubble.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border:0;border-radius:20px 6px 20px 20px;font-weight:500}
 .examples,.choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.examples button,.choices button{border:var(--line);background:transparent;padding:7px 10px;font-size:14px}
-.examples button:hover,.choices button:hover{background:var(--ink);color:var(--bg)}
-.chat-input{display:flex;gap:8px;align-items:center;border-bottom:2px solid var(--ink);padding:4px 0}
-.chat-input input{border:0;outline:0;min-width:0;flex:1;padding:10px 0;background:transparent;font-size:17px}
-.chat-input button{border:0;width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:18px;flex:none}
-.chat-input .mic{display:grid;place-items:center;background:transparent;color:var(--ink);border:var(--line)}
+.examples button,.choices button{border:1px solid rgba(31,229,181,.35);background:transparent;border-radius:999px;padding:7px 12px;color:var(--accent);font-size:13px}
+.chat-input{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--edge);border-radius:999px;padding:6px 6px 6px 18px}
+.chat-input input{border:0;outline:0;min-width:0;flex:1;padding:10px 0;background:transparent;font-size:16px}
+.chat-input button{border:0;width:42px;height:42px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:18px;font-weight:700;flex:none;box-shadow:0 0 16px rgba(31,229,181,.35)}
+/* Mikrofonen ligner den metalliske knappen i forbildet, og sender ut mintgrønne ringer mens den lytter. */
+.chat-input .mic{display:grid;place-items:center;background:linear-gradient(160deg,#5d6463,#2a2f30);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 12px rgba(0,0,0,.5)}
 .chat-input .mic.hidden{display:none}
-.chat-input .mic.listening{background:var(--red);border-color:var(--red);color:#fff;animation:lytter 1.2s ease-in-out infinite}
-@keyframes lytter{50%{box-shadow:0 0 0 7px #e2332d33}}
+.chat-input .mic.listening{background:var(--accent);color:var(--accent-ink);animation:lytter 1.4s ease-out infinite}
+@keyframes lytter{0%{box-shadow:0 0 0 0 rgba(31,229,181,.6),0 0 0 0 rgba(31,229,181,.3)}100%{box-shadow:0 0 0 12px rgba(31,229,181,0),0 0 0 24px rgba(31,229,181,0)}}
 
-dialog{border:2px solid var(--ink);border-radius:0;padding:28px;max-width:420px;width:calc(100% - 32px);background:var(--bg);color:var(--ink)}
-dialog::backdrop{background:#1d1d1bb3}
-dialog h2{font-size:15px;font-weight:600;margin:4px 0 14px}
-dialog p{font-size:16px;line-height:1.5}
-.close{float:right;border:0;background:transparent;font-size:24px}
-dialog>button:not(.close),.import{display:block;width:100%;padding:13px;margin-top:10px;border:var(--line);background:transparent;text-align:center;font-size:12px;font-weight:600}
-dialog>button:not(.close):hover,.import:hover{background:var(--ink);color:var(--bg)}
+dialog{border:1px solid var(--edge);border-radius:28px;padding:28px;max-width:420px;width:calc(100% - 32px);background:var(--panel);color:var(--text);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(0,0,0,.65);backdrop-filter:blur(4px)}
+dialog h2{font-size:22px;font-weight:800;margin:4px 0 12px;text-transform:uppercase}
+dialog p{color:var(--muted);line-height:1.5}
+.close{float:right;border:0;background:transparent;font-size:24px;color:var(--muted)}
+dialog>button:not(.close),.import{display:block;width:100%;padding:14px;margin-top:10px;border:1px solid var(--edge);border-radius:999px;background:var(--panel-2);text-align:center;font-weight:500}
 .import input{display:none}
-.note{color:var(--muted);font-size:14px}
-.account{margin-top:22px;padding-top:6px;border-top:var(--line)}
+.note{color:var(--muted);font-size:12px}
+.account{margin-top:22px;padding-top:6px;border-top:1px solid var(--edge)}
 .account.hidden,.account .hidden{display:none}
-.account h3{font-size:12px;font-weight:600;margin:16px 0 6px}
-.account p{margin:0 0 6px;color:var(--muted);font-size:15px}
-.account form,.account>div{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.account input{padding:12px;border:var(--line);background:transparent;font-size:16px}
-.account button{padding:13px;border:var(--line);background:transparent;font-size:12px;font-weight:600}
-.account form button{background:var(--ink);color:var(--bg)}
+.account h3{font-size:13px;font-weight:600;margin:16px 0 6px;text-transform:uppercase}
+.account p{margin:0 0 6px;font-size:14px}
+.account form,.account>div{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.account input{padding:14px 18px;border:1px solid var(--edge);border-radius:999px;background:#0f1213;font-size:16px}
+.account button{padding:14px;border:1px solid var(--edge);border-radius:999px;background:var(--panel-2);font-weight:500}
+.account form button{margin-left:0;padding:14px}
 
-#toast{position:fixed;left:50%;bottom:25px;transform:translate(-50%,30px);background:var(--ink);color:var(--bg);padding:12px 18px;font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:0;transition:.2s;pointer-events:none;z-index:10}
+#toast{position:fixed;left:50%;bottom:25px;transform:translate(-50%,30px);background:var(--panel-2);color:var(--accent);border:1px solid rgba(31,229,181,.35);padding:12px 20px;border-radius:999px;font-size:14px;opacity:0;transition:.2s;pointer-events:none;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
 @media(max-width:760px){
   header{height:64px;padding:0 18px}
   main{display:block;min-height:auto}
-  .tasks-panel{padding:8px 18px 112px}
-  nav{gap:22px}
-  .heading{margin:40px 0 22px}
-  .chat{position:fixed;z-index:3;left:0;right:0;bottom:0;border-left:0;border-top:var(--line);background:var(--bg);padding:8px 18px calc(10px + env(safe-area-inset-bottom))}
+  .tasks-panel{padding:4px 16px 120px}
+  .heading{margin:40px 4px 22px}
+  .chat{position:fixed;z-index:3;left:0;right:0;bottom:0;border-left:0;border-top:1px solid var(--edge);background:rgba(12,14,15,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
   .chat-title,.messages{display:none}
   .form-row{flex-wrap:wrap}
   .form-row button{flex:1}

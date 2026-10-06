@@ -1,5 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Huskeliste">
-  <rect width="512" height="512" fill="#ffd833"/>
-  <circle cx="256" cy="256" r="150" fill="#1d1d1b"/>
-  <path d="m186 262 48 48 94-104" fill="none" stroke="#ffd833" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <radialGradient id="g" cx="70%" cy="0%" r="90%"><stop offset="0" stop-color="#17786c"/><stop offset="1" stop-color="#0c0e0f"/></radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <circle cx="256" cy="256" r="140" fill="#1fe5b5" opacity=".55" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="140" fill="#1fe5b5"/>
+  <path d="m192 262 44 44 86-96" fill="none" stroke="#04261e" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
