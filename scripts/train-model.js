@@ -37,15 +37,15 @@ const SUFFIXES = ['', '', '', '', ' takk', ' er du snill', ' da', '!'];
 
 function example(intent, [template], { tasks, names }, split) {
   // Oppgaver omtales både som navn («tannlegen») og slik de ble skrevet inn («ringe tannlegen», «ring mamma»).
-  const imperatives = IMPERATIVES.filter((_, k) => (k % 5 === 0) === (split === 'test'));
+  const imperatives = IMPERATIVES.filter((_, k) => (k % 5 === 0) === (split !== 'train'));
   const r = random(), task = intent === 'add' ? pick(r < 0.25 ? names : tasks) : pick(r < 0.55 ? names : r < 0.8 ? tasks : imperatives), date = pick(DATES);
   const parts = [], labels = [];
   const push = (text, label) => tokenize(text).forEach(w => { parts.push(w); labels.push(label); });
   // Ordene i malen merkes som fyllord (O); prefiks og suffiks kommer i tillegg.
   const prefix = intent === 'other' || template.startsWith('kan du') ? '' : pick(PREFIXES);
   push(prefix, 'O');
-  for (const piece of template.split(/(\{t\}|\{d\}|\{p\})/)) {
-    if (piece === '{t}') push(task, 'T'); else if (piece === '{i}') push(pick(split === 'test' ? IMPERATIVES.filter((_, k) => k % 5 === 0) : IMPERATIVES.filter((_, k) => k % 5)), 'T'); else if (piece === '{p}') push(pick(PLACES), 'T'); else if (piece === '{d}') push(date, 'D'); else push(piece, 'O');
+  for (const piece of template.split(/(\{t\}|\{d\}|\{p\}|\{i\})/)) {
+    if (piece === '{t}') push(task, 'T'); else if (piece === '{i}') push(pick(imperatives), 'T'); else if (piece === '{p}') push(pick(PLACES), 'T'); else if (piece === '{d}') push(date, 'D'); else push(piece, 'O');
   }
   if (intent === 'add' && random() < 0.2) push(pick(PRIORITIES), 'O');
   push(pick(SUFFIXES), 'O');
@@ -54,11 +54,12 @@ function example(intent, [template], { tasks, names }, split) {
 }
 
 function dataset(count, split) {
-  const pool = { tasks: ACTIONS.filter((_, i) => (i % 5 === 0) === (split === 'test')), names: NAMES.filter((_, i) => (i % 5 === 0) === (split === 'test')) };
+  // train: kjente oppgaver og maler. nye-oppgaver: nye oppgaver i kjente maler. nye-formuleringer: nye oppgaver i maler modellen aldri har sett.
+  const pool = { tasks: ACTIONS.filter((_, i) => (i % 5 === 0) === (split !== 'train')), names: NAMES.filter((_, i) => (i % 5 === 0) === (split !== 'train')) };
   const out = [];
   for (let n = 0; n < count; n++) {
     const intent = INTENTS[n % INTENTS.length];
-    const templates = TEMPLATES[intent].filter(t => split === 'test' || !t[1]);
+    const templates = TEMPLATES[intent].filter(t => split === 'nye-formuleringer' ? t[1] : !t[1]);
     out.push(example(intent, pick(templates), pool, split));
   }
   return shuffle(out);
@@ -82,18 +83,21 @@ function train(samples, classes, toFeatures, toTarget, epochs = 12, rate = 0.3, 
 
 const argmax = (layer, feats, classes) => { const z = new Float64Array(classes); for (const i of feats) { const r = layer.get(i); if (r) for (let c = 0; c < classes; c++) z[c] += r[c]; } return z.indexOf(Math.max(...z)); };
 
-const trainSet = dataset(18000, 'train'), testSet = dataset(3000, 'test');
+const trainSet = dataset(18000, 'train');
+const testSets = { 'nye oppgaver i kjente formuleringer': dataset(3000, 'nye-oppgaver'), 'nye oppgaver i nye formuleringer': dataset(3000, 'nye-formuleringer') };
 const tokens = set => set.flatMap(s => s.words.map((_, i) => ({ s, i })));
 
 const intentLayer = train(trainSet, INTENTS.length, s => intentFeatures(s.words), s => INTENTS.indexOf(s.intent));
 const tagLayer = train(tokens(trainSet), LABELS.length, ({ s, i }) => tagFeatures(s.words, i, s.intent, undefined, s.labels[i - 1] ?? '<s>'), ({ s, i }) => LABELS.indexOf(s.labels[i]), 4);
 
-const intentAcc = testSet.filter(s => INTENTS[argmax(intentLayer, intentFeatures(s.words), INTENTS.length)] === s.intent).length / testSet.length;
+const guess = s => INTENTS[argmax(intentLayer, intentFeatures(s.words), INTENTS.length)];
 const tagSentence = s => { const out = []; s.words.forEach((_, i) => out.push(LABELS[argmax(tagLayer, tagFeatures(s.words, i, s.intent, undefined, out[i - 1] ?? '<s>'), LABELS.length)])); return out; };
-const spanAcc = testSet.filter(s => tagSentence(s).every((l, i) => l === s.labels[i])).length / testSet.length;
-console.log(`Testsett (${testSet.length} setninger med nye oppgaver og nye formuleringer):`);
-console.log(`  riktig intensjon: ${(intentAcc * 100).toFixed(1)} %`);
-console.log(`  hele setningen riktig merket: ${(spanAcc * 100).toFixed(1)} %`);
+for (const [name, set] of Object.entries(testSets)) {
+  const intentAcc = set.filter(s => guess(s) === s.intent).length / set.length;
+  const spanAcc = set.filter(s => tagSentence(s).every((l, i) => l === s.labels[i])).length / set.length;
+  console.log(`${name} (${set.length} setninger): riktig intensjon ${(intentAcc * 100).toFixed(1)} %, hele setningen riktig merket ${(spanAcc * 100).toFixed(1)} %`);
+  if (process.env.DEBUG) for (const s of set.filter(s => guess(s) !== s.intent).slice(0, 15)) console.log('  feil:', s.intent, '→', guess(s), '|', s.words.join(' '));
+}
 
 // Fyllord: ord som nesten alltid er en del av formuleringen og nesten aldri av selve oppgaven.
 const counts = new Map();
@@ -101,5 +105,4 @@ for (const s of trainSet) s.words.forEach((w, i) => { const c = counts.get(w) ??
 const frame = [...counts].filter(([, c]) => c.O >= 5 && c.O > 10 * c.T).map(([w]) => w).sort();
 const model = { version: 1, dim: DIM, intents: INTENTS, labels: LABELS, frame, intent: encodeLayer(intentLayer, INTENTS.length), tag: encodeLayer(tagLayer, LABELS.length) };
 await writeFile(new URL('../src/model.json', import.meta.url), JSON.stringify(model));
-if (process.env.DEBUG) for (const s of testSet.filter(s => INTENTS[argmax(intentLayer, intentFeatures(s.words), INTENTS.length)] !== s.intent).slice(0, 25)) console.log('  feil:', s.intent, '→', INTENTS[argmax(intentLayer, intentFeatures(s.words), INTENTS.length)], '|', s.words.join(' '));
 console.log(`Lagret src/model.json (${(JSON.stringify(model).length / 1024).toFixed(0)} kB)`);

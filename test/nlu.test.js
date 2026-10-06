@@ -61,4 +61,7 @@ test('finner oppgaver også med bøyde ord', () => {
   assert.deepEqual(findMatches(tasks, 'strømregningen'), [tasks[1]]);
   assert.deepEqual(findMatches(tasks, 'til tannlegen'), [tasks[2]]);
   assert.deepEqual(findMatches(tasks, 'bilen'), []);
+  // Et felles vanlig verb alene er ikke nok til å treffe en oppgave.
+  assert.deepEqual(findMatches(tasks, 'ringe veterinæren'), []);
+  assert.deepEqual(findMatches(tasks, 'ring tannlegen'), [tasks[2]]);
 });

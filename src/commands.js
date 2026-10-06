@@ -28,6 +28,8 @@ export function parseCommand(input, now = new Date()) {
 }
 
 const STOPWORDS = new Set(['på','til','med','for','og','å','i','en','et','ei','den','det','de','min','mitt','mine','som','av','om']);
+// Vanlige verb sier lite om hvilken oppgave det gjelder («ringe veterinæren» skal ikke finne «ringe tannlegen»).
+const GENERIC = ['ringe','ring','kjøpe','kjøp','handle','betale','betal','hente','hent','sende','send','vaske','vask','lage','lag','bestille','bestill','gå','ta','gjøre','gjør','fikse','fiks','levere','lever','sjekke','sjekk','svare','svar','skrive','skriv','rydde','rydd','huske','husk','møte','kjøre','kjør','dra'];
 const words = text => text.toLocaleLowerCase('nb-NO').match(/[\p{L}\p{N}]+/gu)?.filter(w => !STOPWORDS.has(w)) ?? [];
 // To ord regnes som like når det korteste (minst fire tegn) og starten av det lengste stemmer, så «melka» finner «melk».
 function sameWord(a, b) {
@@ -40,9 +42,11 @@ export function findMatches(tasks, query) {
   const exact = tasks.filter(t => t.title.toLocaleLowerCase('nb-NO').includes(needle));
   if (exact.length) return exact;
   // Ingen direkte treff: velg oppgavene som deler flest ord (også bøyde former) med søket.
-  const wanted = words(query);
+  // Bare ord som sier noe om oppgaven teller; består søket bare av vanlige verb, må alle stemme.
+  const all = words(query), specific = all.filter(w => !GENERIC.some(g => sameWord(w, g) && w.length <= g.length + 1));
+  const wanted = specific.length ? specific : all;
   if (!wanted.length) return [];
   const scored = tasks.map(t => { const have = words(t.title); return { t, score: wanted.filter(w => have.some(h => sameWord(w, h))).length / wanted.length }; });
   const best = Math.max(0, ...scored.map(s => s.score));
-  return best >= 0.5 ? scored.filter(s => s.score === best).map(s => s.t) : [];
+  return best >= (specific.length ? 0.5 : 1) ? scored.filter(s => s.score === best).map(s => s.t) : [];
 }
