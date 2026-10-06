@@ -34,8 +34,8 @@ h1{font-size:clamp(40px,8vw,64px);font-weight:800;margin:0;line-height:.95;lette
 .task-form{padding:18px;background:var(--panel);border:1px solid var(--edge);border-radius:24px;margin-bottom:14px}
 .task-form.hidden{display:none}
 .task-form>input{width:100%;font-size:18px;padding:14px 18px;border:1px solid var(--edge);border-radius:999px;background:#0f1213;outline:0}
-input::placeholder{color:#6b7573}
-.form-row{display:flex;gap:10px;margin-top:12px}
+input::placeholder{color:var(--muted);opacity:1}
+.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .form-row>*{min-height:46px;padding:8px 16px;border:1px solid var(--edge);border-radius:999px;background:#0f1213}
 /* Hovedknapper: mintgrønn pille med skrå striper og glød. */
 .form-row button,.account form button{margin-left:auto;border:0;color:var(--accent-ink);font-weight:700;background:repeating-linear-gradient(-45deg,rgba(255,255,255,.12) 0 2px,transparent 2px 7px),var(--accent);box-shadow:var(--glow)}
@@ -46,7 +46,7 @@ input::placeholder{color:#6b7573}
 .task strong{font-size:17px;font-weight:600}
 .task p{margin:7px 0 0;font-size:12px;color:var(--muted);display:flex;align-items:center}
 .task.done strong{text-decoration:line-through;color:var(--muted)}
-.check{width:24px;height:24px;border-radius:50%;border:2px solid #3a4443;background:transparent;color:var(--accent-ink);padding:0;font-size:13px;font-weight:800;line-height:1}
+.check{width:24px;height:24px;border-radius:50%;border:2px solid #6f7c7a;background:transparent;color:var(--accent-ink);padding:0;font-size:13px;font-weight:800;line-height:1}
 .done .check{background:var(--accent);border-color:var(--accent);box-shadow:0 0 14px rgba(31,229,181,.5)}
 .priority{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:9px;background:var(--accent)}
 .priority.høy{background:var(--red);box-shadow:0 0 8px var(--red)}
