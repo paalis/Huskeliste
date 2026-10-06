@@ -1,4 +1,4 @@
-const CACHE='huskeliste-v8';
+const CACHE='huskeliste-v9';
 const FILES=['./','./index.html','./src/app.js','./src/style.css','./src/date.js','./src/commands.js','./src/storage.js','./src/config.js','./src/sync.js','./src/cloud.js','./src/voice.js','./manifest.webmanifest','./icons/icon.svg'];
 const store=(request,response)=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;};
 // Ny versjon tar over med en gang. cache:'reload' hindrer at nettleserens egen hurtigbuffer gir gamle filer ved installering.
