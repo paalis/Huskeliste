@@ -3,9 +3,10 @@ import { parseCommand, findMatches } from './commands.js';
 import { openTaskStore } from './storage.js';
 import { cloudConfigured, openCloud, queueDelete } from './cloud.js';
 import { createVoice, speak } from './voice.js';
+import { loadModel, interpret } from './nlu.js';
 
 const store = openTaskStore();
-let tasks = [], view = 'I dag', pending = null, cloud = null, spoken = false;
+let tasks = [], view = 'I dag', pending = null, cloud = null, spoken = false, nlu = null;
 const views = ['I dag','Kommende','Alle','Fullført'];
 const app = document.querySelector('#app');
 
@@ -14,7 +15,7 @@ app.innerHTML = `<header><div class="brand"><span class="logo">✓</span><span>H
 <div class="heading"><div><p class="eyebrow">MIN DAG</p><h1>I dag</h1><p id="subtitle"></p></div><button id="add" class="add" aria-label="Legg til oppgave">+</button></div>
 <form id="task-form" class="task-form hidden"><input id="title" required maxlength="120" placeholder="Hva skal du huske?" aria-label="Oppgavetittel"><div class="form-row"><input id="due" type="date" aria-label="Frist"><select id="priority" aria-label="Prioritet"><option value="lav">Lav</option><option value="middels" selected>Middels</option><option value="høy">Høy</option></select><button>Lagre</button></div></form>
 <div id="task-list" class="task-list"></div></section>
-<aside class="chat"><div class="chat-title"><span class="avatar">✦</span><div><strong>Hjelperen</strong><small>Innebygd · virker uten nett</small></div></div><div id="messages" class="messages"><div class="bubble bot">Hei! Jeg kan legge til, finne, flytte og fullføre oppgaver.<div class="examples"><button>Legg til handle melk i morgen</button><button>Finn tannlege</button></div></div></div><form id="chat-form" class="chat-input"><input id="chat-text" autocomplete="off" placeholder="Skriv en beskjed …" aria-label="Melding"><button type="button" id="mic" class="mic hidden" aria-label="Snakk til hjelperen" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button aria-label="Send">↑</button></form></aside></main>
+<aside class="chat"><div class="chat-title"><span class="avatar">✦</span><div><strong>Hjelperen</strong><small>Innebygd · virker uten nett</small></div></div><div id="messages" class="messages"><div class="bubble bot">Hei! Si det med dine egne ord, så legger jeg til, finner, flytter og fullfører oppgaver.<div class="examples"><button>Minn meg på å ringe tannlegen på fredag</button><button>Melka er kjøpt</button></div></div></div><form id="chat-form" class="chat-input"><input id="chat-text" autocomplete="off" placeholder="Skriv en beskjed …" aria-label="Melding"><button type="button" id="mic" class="mic hidden" aria-label="Snakk til hjelperen" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button aria-label="Send">↑</button></form></aside></main>
 <dialog id="settings-dialog"><button class="close" aria-label="Lukk">×</button><h2>Data og sikkerhetskopi</h2><p id="storage-note">Oppgavene lagres bare på denne enheten.</p><section id="account" class="account hidden"><h3>Synkronisering</h3><p id="account-status"></p><form id="login-form"><input id="email" type="email" required autocomplete="email" placeholder="E-postadresse" aria-label="E-postadresse"><button>Send innloggingslenke</button></form><form id="code-form" class="hidden"><input id="code" required inputmode="numeric" autocomplete="one-time-code" placeholder="Kode fra e-posten" aria-label="Engangskode"><button>Logg inn med kode</button></form><div id="account-actions" class="hidden"><button id="sync-now" type="button">Synkroniser nå</button><button id="logout" type="button">Logg ut</button></div></section><button id="export">Eksporter sikkerhetskopi</button><label class="import">Importer sikkerhetskopi<input id="import" type="file" accept="application/json"></label><p class="note">Varsler i bakgrunnen er ikke med i denne versjonen.</p></dialog><div id="toast" role="status"></div>`;
 
 const $ = s => document.querySelector(s);
@@ -43,8 +44,8 @@ document.addEventListener('click',async e=>{
 $('#task-form').addEventListener('submit',async e=>{e.preventDefault();try{await save(newTask($('#title').value.trim(),$('#due').value||null,$('#priority').value));e.target.reset();e.target.classList.add('hidden');toast('Oppgaven er lagret');}catch{toast('Kunne ikke lagre oppgaven');}});
 async function execute(command){
   if(command.type==='add'){if(!command.title)return say('Hva skal oppgaven hete?');try{await save(newTask(command.title,command.due,command.priority));say(`Oppgaven er lagret.${command.interpreted?` Jeg tolket datoen som ${command.interpreted.label}.`:''}`);}catch{say('Jeg klarte ikke å lagre oppgaven. Prøv igjen.');}return;}
-  if(command.type==='unknownDate') return say(`Jeg forstår ikke datoen «${command.value}». Prøv for eksempel «i morgen» eller «12.10».`);
-  if(command.type==='unknown') return say('Det forstod jeg ikke helt. Prøv «legg til …», «finn …», «flytt … til i morgen» eller «fullfør …».');
+  if(command.type==='unknownDate') return say(`Jeg forstår ikke datoen «${command.value}». Prøv for eksempel «i morgen», «på fredag» eller «12.10».`);
+  if(command.type==='unknown') return say('Det forstod jeg ikke helt. Prøv for eksempel «minn meg på å …», «flytt … til fredag» eller «… er gjort».');
   const matches=command.selected?[command.selected]:findMatches(tasks,command.query);
   if(!matches.length)return say(`Jeg fant ingen oppgaver som matcher «${command.query}».`);
   if(matches.length>1){pending={command,matches};return say('Jeg fant flere oppgaver. Hvilken mener du?',matches.map(t=>t.title));}
@@ -57,7 +58,7 @@ async function execute(command){
   }
   try{if(command.type==='complete')await save({...t,completed:true}); else if(command.type==='move')await save({...t,due:command.due}); say(command.type==='complete'?`«${t.title}» er fullført.`:`«${t.title}» er flyttet. Jeg tolket datoen som ${command.interpreted.label}.`);}catch{say('Endringen kunne ikke lagres. Prøv igjen.');}
 }
-$('#chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('#chat-text');if(!input.value.trim())return;const el=document.createElement('div');el.className='bubble user';el.textContent=input.value;$('#messages').append(el);const command=parseCommand(input.value);input.value='';execute(command).finally(()=>{spoken=false;});});
+$('#chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('#chat-text');if(!input.value.trim())return;const el=document.createElement('div');el.className='bubble user';el.textContent=input.value;$('#messages').append(el);const text=input.value;let command=parseCommand(text);if(command.type==='unknown'&&nlu)command=interpret(nlu,text);input.value='';execute(command).finally(()=>{spoken=false;});});
 const voice=createVoice({
   onText:text=>{$('#chat-text').value=text;},
   onFinal:text=>{spoken=true;$('#chat-text').value=text;$('#chat-form').requestSubmit();},
@@ -91,4 +92,6 @@ store.all().then(value=>{tasks=value;render();}).catch(()=>toast('Kunne ikke åp
 if(cloudConfigured) openCloud(store,()=>{renderAccount();syncNow();}).then(c=>{cloud=c;renderAccount();syncNow();}).catch(()=>{});
 addEventListener('online',()=>syncNow());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncNow();});
+// Den lille språkmodellen lastes i bakgrunnen; uten den bruker hjelperen bare de faste reglene.
+fetch('./src/model.json').then(r=>r.json()).then(json=>{nlu=loadModel(json);}).catch(()=>{});
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
